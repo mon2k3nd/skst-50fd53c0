@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseTable, toNumber, formatNumber, formatPercent } from "@/lib/parsers";
 import { Trophy, Target, CheckCircle2, TrendingUp } from "lucide-react";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
 
 export const Route = createFileRoute("/thi-dua")({
   component: ThiDuaPage,
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/thi-dua")({
 function ThiDuaPage() {
   const [raw, setRaw] = useState("");
   const parsed = useMemo(() => parseTable(raw), [raw]);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     if (parsed.rows.length === 0) return null;
@@ -60,7 +62,14 @@ function ThiDuaPage() {
 
         {stats && (
           <>
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="mt-6 flex justify-end">
+              <ExportPdfButton
+                getElements={() => [reportRef.current]}
+                filename="ThiDua.pdf"
+              />
+            </div>
+            <div ref={reportRef}>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
               <BigStat
                 label="Số ngành hàng dự kiến đạt"
                 main={`${stats.expected}`}
@@ -135,6 +144,7 @@ function ThiDuaPage() {
                 </table>
               </CardContent>
             </Card>
+            </div>
           </>
         )}
       </main>
