@@ -4,6 +4,52 @@ import html2canvas from "html2canvas";
 // html2canvas (v1) cannot parse modern color functions like oklch()/oklab()/color().
 // Our design tokens use oklch, so we pre-resolve every element's color-related
 // styles to plain rgb() inside the cloned document right before rendering.
+
+// Minimal oklch -> sRGB converter (returns "rgb(r,g,b)" or "rgba(r,g,b,a)").
+function oklchToRgb(L: number, C: number, h: number, alpha = 1): string {
+  const hr = (h * Math.PI) / 180;
+  const a = Math.cos(hr) * C;
+  const b = Math.sin(hr) * C;
+  // OKLab -> linear sRGB
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ ** 3;
+  const m = m_ ** 3;
+  const s = s_ ** 3;
+  let r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  let g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  let bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+  const toSrgb = (x: number) => {
+    const c = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+    return Math.max(0, Math.min(255, Math.round(c * 255)));
+  };
+  const R = toSrgb(r),
+    G = toSrgb(g),
+    B = toSrgb(bl);
+  return alpha < 1 ? `rgba(${R},${G},${B},${alpha})` : `rgb(${R},${G},${B})`;
+}
+
+// Replace any oklch(...) occurrences in a CSS value string with rgb().
+function replaceOklch(value: string): string {
+  if (!value || !value.includes("oklch")) return value;
+  return value.replace(
+    /oklch\(\s*([0-9.]+%?)\s+([0-9.]+)\s+([0-9.]+)(?:\s*\/\s*([0-9.]+%?))?\s*\)/gi,
+    (_m, lRaw: string, cRaw: string, hRaw: string, aRaw?: string) => {
+      let L = parseFloat(lRaw);
+      if (lRaw.endsWith("%")) L = L / 100;
+      const C = parseFloat(cRaw);
+      const h = parseFloat(hRaw);
+      let alpha = 1;
+      if (aRaw) {
+        alpha = parseFloat(aRaw);
+        if (aRaw.endsWith("%")) alpha = alpha / 100;
+      }
+      return oklchToRgb(L, C, h, alpha);
+    },
+  );
+}
+
 const COLOR_PROPS = [
   "color",
   "background-color",
@@ -27,15 +73,15 @@ function sanitizeColors(root: HTMLElement) {
     const cs = win.getComputedStyle(el);
     for (const prop of COLOR_PROPS) {
       const v = cs.getPropertyValue(prop);
-      if (v && v.trim()) el.style.setProperty(prop, v);
+      if (v && v.trim()) el.style.setProperty(prop, replaceOklch(v));
     }
-    // Backgrounds (gradients) — keep computed value if it contains oklch
     const bg = cs.getPropertyValue("background-image");
     if (bg && bg !== "none") {
-      // Replace any oklch(...) inside gradients with the computed fallback rgb
-      // Browsers already resolved this in getComputedStyle for gradients in
-      // most cases; assigning back is safe.
-      el.style.setProperty("background-image", bg);
+      el.style.setProperty("background-image", replaceOklch(bg));
+    }
+    const boxShadow = cs.getPropertyValue("box-shadow");
+    if (boxShadow && boxShadow !== "none") {
+      el.style.setProperty("box-shadow", replaceOklch(boxShadow));
     }
   };
   apply(root);
