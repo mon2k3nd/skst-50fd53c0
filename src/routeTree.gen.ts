@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ThiDuaRouteImport } from './routes/thi-dua'
+import { Route as NhanVienRouteImport } from './routes/nhan-vien'
 import { Route as LuyKeRouteImport } from './routes/luy-ke'
 import { Route as DoanhThuRouteImport } from './routes/doanh-thu'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const ThiDuaRoute = ThiDuaRouteImport.update({
   id: '/thi-dua',
   path: '/thi-dua',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NhanVienRoute = NhanVienRouteImport.update({
+  id: '/nhan-vien',
+  path: '/nhan-vien',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LuyKeRoute = LuyKeRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
+  '/nhan-vien': typeof NhanVienRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
+  '/nhan-vien': typeof NhanVienRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
+  '/nhan-vien': typeof NhanVienRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
+  fullPaths: '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien' | '/thi-dua'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
-  id: '__root__' | '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
+  to: '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien' | '/thi-dua'
+  id: '__root__' | '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien' | '/thi-dua'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DoanhThuRoute: typeof DoanhThuRoute
   LuyKeRoute: typeof LuyKeRoute
+  NhanVienRoute: typeof NhanVienRoute
   ThiDuaRoute: typeof ThiDuaRoute
 }
 
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/thi-dua'
       fullPath: '/thi-dua'
       preLoaderRoute: typeof ThiDuaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nhan-vien': {
+      id: '/nhan-vien'
+      path: '/nhan-vien'
+      fullPath: '/nhan-vien'
+      preLoaderRoute: typeof NhanVienRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/luy-ke': {
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DoanhThuRoute: DoanhThuRoute,
   LuyKeRoute: LuyKeRoute,
+  NhanVienRoute: NhanVienRoute,
   ThiDuaRoute: ThiDuaRoute,
 }
 export const routeTree = rootRouteImport
