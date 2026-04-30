@@ -1,6 +1,47 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+// html2canvas (v1) cannot parse modern color functions like oklch()/oklab()/color().
+// Our design tokens use oklch, so we pre-resolve every element's color-related
+// styles to plain rgb() inside the cloned document right before rendering.
+const COLOR_PROPS = [
+  "color",
+  "background-color",
+  "border-top-color",
+  "border-right-color",
+  "border-bottom-color",
+  "border-left-color",
+  "outline-color",
+  "text-decoration-color",
+  "fill",
+  "stroke",
+  "caret-color",
+  "column-rule-color",
+] as const;
+
+function sanitizeColors(root: HTMLElement) {
+  const win = root.ownerDocument?.defaultView;
+  if (!win) return;
+  const all = root.querySelectorAll<HTMLElement>("*");
+  const apply = (el: HTMLElement) => {
+    const cs = win.getComputedStyle(el);
+    for (const prop of COLOR_PROPS) {
+      const v = cs.getPropertyValue(prop);
+      if (v && v.trim()) el.style.setProperty(prop, v);
+    }
+    // Backgrounds (gradients) — keep computed value if it contains oklch
+    const bg = cs.getPropertyValue("background-image");
+    if (bg && bg !== "none") {
+      // Replace any oklch(...) inside gradients with the computed fallback rgb
+      // Browsers already resolved this in getComputedStyle for gradients in
+      // most cases; assigning back is safe.
+      el.style.setProperty("background-image", bg);
+    }
+  };
+  apply(root);
+  all.forEach(apply);
+}
+
 /**
  * Export one or more DOM elements to a single PDF (A4 portrait).
  * Each element becomes one page (if it's taller than a page it will be sliced across pages).
@@ -25,6 +66,12 @@ export async function exportElementsToPdf(
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
+      onclone: (doc, clonedEl) => {
+        sanitizeColors(clonedEl as HTMLElement);
+        // Also walk the entire cloned document body so ancestor backgrounds
+        // (e.g. body/main) don't break with oklch.
+        if (doc.body) sanitizeColors(doc.body);
+      },
     });
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
     const ratio = canvas.height / canvas.width;
