@@ -29,14 +29,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Sức Khỏe Siêu Thị" },
+      { name: "description", content: "Store Insights Hub provides data-driven analytics for retail sales, employee performance, and cumulative growth." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Sức Khỏe Siêu Thị" },
+      { property: "og:description", content: "Store Insights Hub provides data-driven analytics for retail sales, employee performance, and cumulative growth." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Sức Khỏe Siêu Thị" },
+      { name: "twitter:description", content: "Store Insights Hub provides data-driven analytics for retail sales, employee performance, and cumulative growth." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f2de0056-987c-4399-a4bb-f9f8bf4080cf/id-preview-473c499f--e70e06c9-dedb-403c-9407-4001ca2cc1e1.lovable.app-1777578323980.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f2de0056-987c-4399-a4bb-f9f8bf4080cf/id-preview-473c499f--e70e06c9-dedb-403c-9407-4001ca2cc1e1.lovable.app-1777578323980.png" },
     ],
     links: [
       {
