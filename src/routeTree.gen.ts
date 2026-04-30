@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ThiDuaRouteImport } from './routes/thi-dua'
+import { Route as LuyKeRouteImport } from './routes/luy-ke'
 import { Route as DoanhThuRouteImport } from './routes/doanh-thu'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ThiDuaRoute = ThiDuaRouteImport.update({
   id: '/thi-dua',
   path: '/thi-dua',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LuyKeRoute = LuyKeRouteImport.update({
+  id: '/luy-ke',
+  path: '/luy-ke',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DoanhThuRoute = DoanhThuRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
+  '/luy-ke': typeof LuyKeRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
+  '/luy-ke': typeof LuyKeRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/doanh-thu': typeof DoanhThuRoute
+  '/luy-ke': typeof LuyKeRoute
   '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/doanh-thu' | '/thi-dua'
+  fullPaths: '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/doanh-thu' | '/thi-dua'
-  id: '__root__' | '/' | '/doanh-thu' | '/thi-dua'
+  to: '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
+  id: '__root__' | '/' | '/doanh-thu' | '/luy-ke' | '/thi-dua'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DoanhThuRoute: typeof DoanhThuRoute
+  LuyKeRoute: typeof LuyKeRoute
   ThiDuaRoute: typeof ThiDuaRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/thi-dua'
       fullPath: '/thi-dua'
       preLoaderRoute: typeof ThiDuaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/luy-ke': {
+      id: '/luy-ke'
+      path: '/luy-ke'
+      fullPath: '/luy-ke'
+      preLoaderRoute: typeof LuyKeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/doanh-thu': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DoanhThuRoute: DoanhThuRoute,
+  LuyKeRoute: LuyKeRoute,
   ThiDuaRoute: ThiDuaRoute,
 }
 export const routeTree = rootRouteImport
