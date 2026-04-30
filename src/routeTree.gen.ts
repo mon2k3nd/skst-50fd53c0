@@ -9,8 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ThiDuaRouteImport } from './routes/thi-dua'
+import { Route as DoanhThuRouteImport } from './routes/doanh-thu'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ThiDuaRoute = ThiDuaRouteImport.update({
+  id: '/thi-dua',
+  path: '/thi-dua',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DoanhThuRoute = DoanhThuRouteImport.update({
+  id: '/doanh-thu',
+  path: '/doanh-thu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +31,50 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
+  '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
+  '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
+  '/thi-dua': typeof ThiDuaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/doanh-thu' | '/thi-dua'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/doanh-thu' | '/thi-dua'
+  id: '__root__' | '/' | '/doanh-thu' | '/thi-dua'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DoanhThuRoute: typeof DoanhThuRoute
+  ThiDuaRoute: typeof ThiDuaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/thi-dua': {
+      id: '/thi-dua'
+      path: '/thi-dua'
+      fullPath: '/thi-dua'
+      preLoaderRoute: typeof ThiDuaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/doanh-thu': {
+      id: '/doanh-thu'
+      path: '/doanh-thu'
+      fullPath: '/doanh-thu'
+      preLoaderRoute: typeof DoanhThuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DoanhThuRoute: DoanhThuRoute,
+  ThiDuaRoute: ThiDuaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
