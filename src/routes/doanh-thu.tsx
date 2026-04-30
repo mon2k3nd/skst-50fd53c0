@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { parseTable, toNumber, formatNumber, formatPercent } from "@/lib/parsers";
 import { Store, TrendingUp, Target, DollarSign } from "lucide-react";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
 
 export const Route = createFileRoute("/doanh-thu")({
   component: DoanhThuPage,
@@ -21,6 +22,7 @@ function DoanhThuPage() {
   const [storeName, setStoreName] = useState("");
   const [target, setTarget] = useState("");
   const [raw, setRaw] = useState("");
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const parsed = useMemo(() => parseTable(raw), [raw]);
   const summary = useMemo(() => {
@@ -82,7 +84,14 @@ function DoanhThuPage() {
 
         {summary && (
           <>
-            <div className="mt-6 grid gap-4 md:grid-cols-4">
+            <div className="mt-6 flex justify-end">
+              <ExportPdfButton
+                getElements={() => [reportRef.current]}
+                filename={`DoanhThu_${(storeName || "BaoCao").replace(/\s+/g, "_")}.pdf`}
+              />
+            </div>
+            <div ref={reportRef}>
+            <div className="mt-4 grid gap-4 md:grid-cols-4">
               <StatCard
                 icon={<DollarSign className="h-5 w-5" />}
                 label="Doanh thu"
@@ -142,6 +151,7 @@ function DoanhThuPage() {
                 </table>
               </CardContent>
             </Card>
+            </div>
           </>
         )}
       </main>
