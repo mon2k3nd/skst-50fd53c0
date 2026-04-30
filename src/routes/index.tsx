@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Store, Trophy, BarChart3, Users, ArrowRight } from "lucide-react";
+import { Store, Trophy, BarChart3, Users, ArrowRight, FileDown } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -90,6 +90,20 @@ function Index() {
               </Link>
             );
           })}
+        </div>
+
+        <div className="mt-10 rounded-xl border-2 border-dashed border-info/30 bg-info/5 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-md bg-info/15 p-2 text-info">
+              <FileDown className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground">Xuất báo cáo PDF gửi quản lý</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Mỗi mục (Doanh Thu, Thi Đua, Luỹ Kế, Nhân Viên) đều có nút <strong>Xuất PDF</strong> ở góc phải sau khi bạn dán dữ liệu. Mở từng trang → dán dữ liệu → bấm <strong>Xuất PDF</strong> để tải file gửi cấp trên.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
