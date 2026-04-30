@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { parseTable, toNumber, formatNumber, formatPercent } from "@/lib/parsers";
 import { BarChart3, TrendingUp, Calendar, Percent } from "lucide-react";
+import { ExportPdfButton } from "@/components/ExportPdfButton";
 
 export const Route = createFileRoute("/luy-ke")({
   component: LuyKePage,
@@ -22,23 +23,42 @@ function LuyKePage() {
   const [endDate, setEndDate] = useState("");
   const [raw, setRaw] = useState("");
   const parsed = useMemo(() => parseTable(raw), [raw]);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const summary = useMemo(() => {
     if (parsed.rows.length === 0) return null;
+    // Find the "Tổng / Total" row by scanning ALL string cells (not just first column)
     const totalRow =
-      parsed.rows.find((r) => String(Object.values(r)[0]).match(/Tổng|Total/i)) ?? null;
+      parsed.rows.find((r) =>
+        Object.values(r).some(
+          (v) => typeof v === "string" && /^\s*(tổng|tong|total|t\.cộng|cộng)/i.test(v),
+        ),
+      ) ?? null;
     const dtCol =
       parsed.headers.find((h) => /DTQĐ|Doanh thu|Quy đổi/i.test(h)) ?? parsed.headers[1];
     const targetCol = parsed.headers.find((h) => /Target/i.test(h)) ?? "";
     const htCol = parsed.headers.find((h) => /% HT|Hoàn thành/i.test(h)) ?? "";
     const traChamCol = parsed.headers.find((h) => /Trả chậm|Trả Góp/i.test(h)) ?? "";
 
-    const dt = totalRow ? toNumber(totalRow[dtCol]) : parsed.rows.reduce((s, r) => s + toNumber(r[dtCol]), 0);
-    const target = totalRow && targetCol ? toNumber(totalRow[targetCol]) : 0;
-    const ht = totalRow && htCol ? toNumber(totalRow[htCol]) : target ? (dt / target) * 100 : 0;
+    // Only fall back to summing if we have NO total row at all.
+    const dt = totalRow
+      ? toNumber(totalRow[dtCol])
+      : parsed.rows.reduce((s, r) => s + toNumber(r[dtCol]), 0);
+    const target =
+      totalRow && targetCol
+        ? toNumber(totalRow[targetCol])
+        : targetCol
+          ? parsed.rows.reduce((s, r) => s + toNumber(r[targetCol]), 0)
+          : 0;
+    const ht =
+      totalRow && htCol
+        ? toNumber(totalRow[htCol])
+        : target
+          ? (dt / target) * 100
+          : 0;
     const traCham = totalRow && traChamCol ? toNumber(totalRow[traChamCol]) : 0;
 
-    return { dt, target, ht, traCham, dtCol, htCol, targetCol };
+    return { dt, target, ht, traCham, dtCol, htCol, targetCol, hasTotalRow: !!totalRow };
   }, [parsed]);
 
   return (
@@ -78,7 +98,19 @@ function LuyKePage() {
 
         {summary && (
           <>
-            <Card className="mt-6 border-2 shadow-[var(--shadow-elevated)]">
+            <div className="mt-6 flex justify-end">
+              <ExportPdfButton
+                getElements={() => [reportRef.current]}
+                filename={`LuyKe_${(storeName || "BaoCao").replace(/\s+/g, "_")}.pdf`}
+              />
+            </div>
+            {!summary.hasTotalRow && (
+              <div className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning-foreground">
+                ⚠ Không tìm thấy dòng "Tổng" trong dữ liệu — số liệu tổng quan đang được cộng từ các dòng ngành hàng. Hãy dán bảng có dòng Tổng để kết quả chính xác.
+              </div>
+            )}
+            <div ref={reportRef}>
+            <Card className="mt-4 border-2 shadow-[var(--shadow-elevated)]">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-extrabold text-info">
                   BÁO CÁO DOANH THU LUỸ KẾ
@@ -127,6 +159,7 @@ function LuyKePage() {
                 </table>
               </CardContent>
             </Card>
+            </div>
           </>
         )}
       </main>
