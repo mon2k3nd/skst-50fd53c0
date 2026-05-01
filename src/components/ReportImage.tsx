@@ -49,8 +49,8 @@ function pctColor(n: number | null | undefined, good = true): string {
  * Uses inline rgb() styles only (no oklch / tailwind tokens) so html2canvas
  * can rasterize it cleanly into PNG.
  */
-export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeOverride?: string; periodOverride?: string }>(
-  function ReportImage({ report, storeOverride, periodOverride }, ref) {
+export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeOverride?: string; periodOverride?: string; title?: string; firstColLabel?: string }>(
+  function ReportImage({ report, storeOverride, periodOverride, title = "DOANH THU LUỸ KẾ", firstColLabel = "NGÀNH HÀNG" }, ref) {
     const k = report.kpis;
     const store = storeOverride || report.store_name || "—";
     const period = periodOverride || report.period_label || "";
@@ -83,7 +83,7 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
         {/* Title */}
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 44, fontWeight: 900, color: "rgb(225,40,110)", letterSpacing: 1 }}>
-            DOANH THU LUỸ KẾ
+            {title}
           </div>
           <div
             style={{
@@ -143,7 +143,7 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "rgb(255,235,243)", color: "rgb(180,30,90)" }}>
-                {["NGÀNH HÀNG", "SL", "DTQĐ(TR)", "LÃI GỘP QĐ", "+/- CÙNG KỲ", "ĐƠN GIÁ", "% TRẢ CHẬM"].map((h, i) => (
+                {[firstColLabel, "SL", "DTQĐ(TR)", "LÃI GỘP QĐ", "+/- CÙNG KỲ", "ĐƠN GIÁ", "% TRẢ CHẬM"].map((h, i) => (
                   <th
                     key={h}
                     style={{
