@@ -5,8 +5,13 @@ import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { parseTable, toNumber, formatNumber, formatPercent } from "@/lib/parsers";
-import { BarChart3, TrendingUp, Calendar, Percent } from "lucide-react";
+import { BarChart3, TrendingUp, Calendar, Percent, Sparkles, ImageDown, Loader2 } from "lucide-react";
 import { ExportPdfButton } from "@/components/ExportPdfButton";
+import { Button } from "@/components/ui/button";
+import { ReportImage, type BiReport } from "@/components/ReportImage";
+import { downloadElementAsPng } from "@/lib/image";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/luy-ke")({
   component: LuyKePage,
@@ -24,6 +29,43 @@ function LuyKePage() {
   const [raw, setRaw] = useState("");
   const parsed = useMemo(() => parseTable(raw), [raw]);
   const reportRef = useRef<HTMLDivElement>(null);
+  const aiImageRef = useRef<HTMLDivElement>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReport, setAiReport] = useState<BiReport | null>(null);
+  const [pngBusy, setPngBusy] = useState(false);
+
+  async function runAi() {
+    if (!raw.trim()) {
+      toast.error("Hãy dán nội dung báo cáo trước.");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-bi", {
+        body: { text: raw },
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      setAiReport(data as BiReport);
+      toast.success("AI đã phân tích xong.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không phân tích được dữ liệu.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function downloadPng() {
+    setPngBusy(true);
+    try {
+      const fname = `LuyKe_${(storeName || aiReport?.store_name || "BaoCao").replace(/\s+/g, "_")}.png`;
+      await downloadElementAsPng(aiImageRef.current, fname);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không tải ảnh được.");
+    } finally {
+      setPngBusy(false);
+    }
+  }
 
   const summary = useMemo(() => {
     if (parsed.rows.length === 0) return null;
@@ -95,6 +137,41 @@ function LuyKePage() {
             rows={10}
           />
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={runAi} disabled={aiBusy || !raw.trim()}>
+            {aiBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {aiBusy ? "Đang phân tích..." : "Phân tích bằng AI & tạo ảnh báo cáo"}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            AI sẽ tự bỏ menu / chữ thừa và xuất ảnh báo cáo giống mẫu.
+          </span>
+        </div>
+
+        {aiReport && (
+          <div className="mt-6">
+            <div className="mb-3 flex flex-wrap justify-end gap-2">
+              <Button variant="default" onClick={downloadPng} disabled={pngBusy}>
+                {pngBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageDown className="mr-2 h-4 w-4" />}
+                {pngBusy ? "Đang tải..." : "Tải ảnh PNG"}
+              </Button>
+              <ExportPdfButton
+                getElements={() => [aiImageRef.current]}
+                filename={`LuyKe_${(storeName || aiReport.store_name || "BaoCao").replace(/\s+/g, "_")}.pdf`}
+                label="Xuất PDF"
+                variant="outline"
+              />
+            </div>
+            <div className="overflow-x-auto rounded-lg bg-muted/30 p-4">
+              <ReportImage
+                ref={aiImageRef}
+                report={aiReport}
+                storeOverride={storeName || undefined}
+                periodOverride={endDate ? `HẾT NGÀY: ${endDate}` : undefined}
+              />
+            </div>
+          </div>
+        )}
 
         {summary && (
           <>
