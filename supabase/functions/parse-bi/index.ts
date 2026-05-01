@@ -6,10 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM_PROMPT = `Bạn là trợ lý phân tích báo cáo BI bán lẻ tiếng Việt.
+const BASE_PROMPT = `Bạn là trợ lý phân tích báo cáo BI bán lẻ tiếng Việt.
 Người dùng dán nội dung copy thô (lẫn menu, tiêu đề, chữ thừa). Nhiệm vụ:
 1) Bỏ qua mọi text thừa (menu, breadcrumb, tên user, tên các tab...).
-2) Trích xuất KPI tổng quan + bảng theo ngành hàng.
+2) Trích xuất KPI tổng quan + bảng theo ngành hàng / nhân viên.
 3) Suy luận tên siêu thị (vd: "351 Cầu Giấy") và mốc thời gian nếu có.
 
 QUAN TRỌNG về số liệu:
@@ -17,6 +17,13 @@ QUAN TRỌNG về số liệu:
 - KPI "% Hoàn thành" = % HT Target (nếu có), nếu không thì doanh_thu/muc_tieu*100.
 - Nếu nguồn có dòng "Tổng" thì lấy số ở dòng Tổng cho doanh_thu, mục tiêu, lãi gộp.
 - Trường nào không có trong nguồn thì để null.`;
+
+const KIND_HINTS: Record<string, string> = {
+  "luy-ke": `Ngữ cảnh: BÁO CÁO DOANH THU LUỸ KẾ theo ngành hàng. Tiêu đề chuẩn: "DOANH THU LUỸ KẾ".`,
+  "doanh-thu": `Ngữ cảnh: BÁO CÁO DOANH THU REALTIME theo ngành hàng. Tiêu đề chuẩn: "DOANH THU REALTIME". Mỗi item ngành hàng dùng "ten" làm tên ngành hàng, "dtqd" là DT Realtime, "don_gia" có thể bỏ trống.`,
+  "thi-dua": `Ngữ cảnh: BÁO CÁO THI ĐUA theo ngành hàng. Tiêu đề chuẩn: "THI ĐUA NGÀNH HÀNG". KPI "pct_hoan_thanh" = % HT Target ngày, "du_kien_thang" = % HT dự kiến (nếu có). Trong industries: "cung_ky_pct" để dành cho % HT Target, "tra_cham_pct" để dành cho % HT dự kiến.`,
+  "nhan-vien": `Ngữ cảnh: BÁO CÁO DOANH THU THEO NHÂN VIÊN. Tiêu đề chuẩn: "DOANH THU THEO NHÂN VIÊN". Trường "industries" lúc này là DANH SÁCH NHÂN VIÊN, mỗi item: "ten" = "MãNV - Họ tên" (hoặc chỉ tên nếu không có mã), "sl" = số lượng bán, "dtqd" = doanh thu quy đổi (triệu), "lai_gop" = lãi gộp, "cung_ky_pct" = % HT target nếu có, "don_gia" = đơn giá TB, "tra_cham_pct" = % trả chậm. KHÔNG đưa dòng tổng vào danh sách.`,
+};
 
 const TOOL = {
   type: "function",
@@ -73,7 +80,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { text } = await req.json();
+    const { text, kind } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Thiếu trường 'text'." }), {
         status: 400,
@@ -84,6 +91,7 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY chưa cấu hình.");
 
+    const systemPrompt = `${BASE_PROMPT}\n\n${KIND_HINTS[kind as string] ?? ""}`.trim();
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -93,7 +101,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: text },
         ],
         tools: [TOOL],

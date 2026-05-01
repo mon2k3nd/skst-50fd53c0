@@ -5,8 +5,8 @@ import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { parseTable, toNumber, formatNumber, formatPercent } from "@/lib/parsers";
-import { Users, Trophy, DollarSign, UserPlus, Trash2, Save } from "lucide-react";
+import { parseTable, toNumber } from "@/lib/parsers";
+import { DollarSign, UserPlus, Trash2, Save, ImageDown, Loader2 } from "lucide-react";
 import {
   useEmployees,
   aggregateByEmployee,
@@ -14,6 +14,9 @@ import {
   type Employee,
 } from "@/lib/employees";
 import { ExportPdfButton } from "@/components/ExportPdfButton";
+import { ReportImage, type BiReport } from "@/components/ReportImage";
+import { downloadElementAsPng } from "@/lib/image";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/nhan-vien")({
   component: NhanVienPage,
@@ -43,6 +46,7 @@ function NhanVienPage() {
   );
 
   const reportRef = useRef<HTMLDivElement>(null);
+  const [pngBusy, setPngBusy] = useState(false);
 
   const rows = useMemo(() => {
     return list.map((e) => {
@@ -56,6 +60,42 @@ function NhanVienPage() {
   const totalTarget = list.reduce((s, e) => s + e.target, 0);
   const totalPct = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
   const winners = rows.filter((r) => r.pct >= 100).length;
+
+  const aiReport: BiReport = useMemo(() => ({
+    store_name: `${winners}/${list.length} NV về đích`,
+    period_label: "",
+    kpis: {
+      doanh_thu: totalActual || null,
+      muc_tieu: totalTarget || null,
+      pct_hoan_thanh: totalTarget ? totalPct : null,
+      du_kien_thang: null,
+      cung_ky: null,
+      du_kien_ht_lntt: null,
+      tra_cham_hien_tai: null,
+      tra_cham_target: null,
+      lai_gop: null,
+    },
+    industries: rows.map((r) => ({
+      ten: `${r.emp.code ? r.emp.code + " - " : ""}${r.emp.name}`,
+      sl: null,
+      dtqd: r.actual || null,
+      lai_gop: r.emp.target || null,
+      cung_ky_pct: r.emp.target > 0 ? r.pct : null,
+      don_gia: Math.max(0, r.emp.target - r.actual) || null,
+      tra_cham_pct: null,
+    })),
+  }), [rows, totalActual, totalTarget, totalPct, list.length, winners]);
+
+  async function downloadPng() {
+    setPngBusy(true);
+    try {
+      await downloadElementAsPng(reportRef.current, "BaoCao_NhanVien.png");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không tải ảnh được.");
+    } finally {
+      setPngBusy(false);
+    }
+  }
 
   const onAdd = () => {
     if (!name.trim()) return;
@@ -148,69 +188,25 @@ function NhanVienPage() {
         {/* Report */}
         {list.length > 0 && (
           <>
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 mb-3 flex flex-wrap justify-end gap-2">
+              <Button variant="default" onClick={downloadPng} disabled={pngBusy}>
+                {pngBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageDown className="mr-2 h-4 w-4" />}
+                {pngBusy ? "Đang tải..." : "Tải ảnh PNG"}
+              </Button>
               <ExportPdfButton
                 getElements={() => [reportRef.current]}
                 filename="BaoCao_NhanVien.pdf"
+                label="Xuất PDF"
+                variant="outline"
               />
             </div>
-            <div ref={reportRef} className="mt-4 space-y-4">
-              <div className="grid gap-4 md:grid-cols-4">
-                <StatBlock label="Số NV" value={String(list.length)} icon={<Users className="h-5 w-5" />} gradient="var(--gradient-info)" />
-                <StatBlock label="Tổng doanh thu" value={formatNumber(totalActual)} icon={<DollarSign className="h-5 w-5" />} gradient="var(--gradient-success)" />
-                <StatBlock label="Tổng target" value={formatNumber(totalTarget)} icon={<Trophy className="h-5 w-5" />} gradient="var(--gradient-warning)" />
-                <StatBlock label="% Hoàn thành" value={totalTarget ? formatPercent(totalPct) : "—"} icon={<Trophy className="h-5 w-5" />} gradient="var(--gradient-hero)" />
-              </div>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle className="text-info">Báo Cáo Hoàn Thành Nhân Viên</CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-3 py-2 text-left">Mã NV</th>
-                        <th className="px-3 py-2 text-left">Họ tên</th>
-                        <th className="px-3 py-2 text-right">Target</th>
-                        <th className="px-3 py-2 text-right">Thực hiện</th>
-                        <th className="px-3 py-2 text-right">% HT</th>
-                        <th className="px-3 py-2 text-right">Còn thiếu</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r) => {
-                        const cls =
-                          r.pct >= 100
-                            ? "text-success font-bold"
-                            : r.pct >= 80
-                              ? "text-warning font-semibold"
-                              : "text-destructive font-semibold";
-                        const remain = Math.max(0, r.emp.target - r.actual);
-                        return (
-                          <tr key={r.emp.id} className="border-b">
-                            <td className="px-3 py-2 font-mono">{r.emp.code || "—"}</td>
-                            <td className="px-3 py-2">{r.emp.name}</td>
-                            <td className="px-3 py-2 text-right">{formatNumber(r.emp.target)}</td>
-                            <td className="px-3 py-2 text-right">{formatNumber(r.actual)}</td>
-                            <td className={`px-3 py-2 text-right ${cls}`}>
-                              {r.emp.target > 0 ? formatPercent(r.pct) : "—"}
-                            </td>
-                            <td className="px-3 py-2 text-right">{formatNumber(remain)}</td>
-                          </tr>
-                        );
-                      })}
-                      <tr className="bg-muted/40 font-bold">
-                        <td className="px-3 py-2" colSpan={2}>TỔNG ({winners}/{list.length} về đích)</td>
-                        <td className="px-3 py-2 text-right">{formatNumber(totalTarget)}</td>
-                        <td className="px-3 py-2 text-right">{formatNumber(totalActual)}</td>
-                        <td className="px-3 py-2 text-right">{totalTarget ? formatPercent(totalPct) : "—"}</td>
-                        <td className="px-3 py-2 text-right">{formatNumber(Math.max(0, totalTarget - totalActual))}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
+            <div className="overflow-x-auto rounded-lg bg-muted/30 p-4">
+              <ReportImage
+                ref={reportRef}
+                report={aiReport}
+                title="DOANH THU THEO NHÂN VIÊN"
+                firstColLabel="NHÂN VIÊN"
+              />
             </div>
           </>
         )}
@@ -312,29 +308,5 @@ function EmployeeEditTable({
         })}
       </tbody>
     </table>
-  );
-}
-
-function StatBlock({
-  label,
-  value,
-  icon,
-  gradient,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  gradient: string;
-}) {
-  return (
-    <Card className="overflow-hidden shadow-[var(--shadow-card)]">
-      <div className="flex items-center gap-3 p-4 text-white" style={{ background: gradient }}>
-        <div className="rounded-md bg-white/20 p-2">{icon}</div>
-        <div>
-          <div className="text-xs font-medium opacity-90">{label}</div>
-          <div className="text-2xl font-bold">{value}</div>
-        </div>
-      </div>
-    </Card>
   );
 }
