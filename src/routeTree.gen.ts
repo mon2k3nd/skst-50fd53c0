@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as NhanVienRouteImport } from './routes/nhan-vien'
 import { Route as LuyKeRouteImport } from './routes/luy-ke'
+import { Route as DoanhThuRouteImport } from './routes/doanh-thu'
 import { Route as IndexRouteImport } from './routes/index'
 
 const NhanVienRoute = NhanVienRouteImport.update({
@@ -23,6 +24,11 @@ const LuyKeRoute = LuyKeRouteImport.update({
   path: '/luy-ke',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DoanhThuRoute = DoanhThuRouteImport.update({
+  id: '/doanh-thu',
+  path: '/doanh-thu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
   '/nhan-vien': typeof NhanVienRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
   '/nhan-vien': typeof NhanVienRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/doanh-thu': typeof DoanhThuRoute
   '/luy-ke': typeof LuyKeRoute
   '/nhan-vien': typeof NhanVienRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/luy-ke' | '/nhan-vien'
+  fullPaths: '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/luy-ke' | '/nhan-vien'
-  id: '__root__' | '/' | '/luy-ke' | '/nhan-vien'
+  to: '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien'
+  id: '__root__' | '/' | '/doanh-thu' | '/luy-ke' | '/nhan-vien'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DoanhThuRoute: typeof DoanhThuRoute
   LuyKeRoute: typeof LuyKeRoute
   NhanVienRoute: typeof NhanVienRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LuyKeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/doanh-thu': {
+      id: '/doanh-thu'
+      path: '/doanh-thu'
+      fullPath: '/doanh-thu'
+      preLoaderRoute: typeof DoanhThuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DoanhThuRoute: DoanhThuRoute,
   LuyKeRoute: LuyKeRoute,
   NhanVienRoute: NhanVienRoute,
 }
