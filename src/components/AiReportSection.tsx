@@ -15,9 +15,10 @@ interface Props {
   filenameBase: string;
   storeOverride?: string;
   periodOverride?: string;
+  targetMultiplier?: number;
 }
 
-export function AiReportSection({ raw, kind, title, firstColLabel, filenameBase, storeOverride, periodOverride }: Props) {
+export function AiReportSection({ raw, kind, title, firstColLabel, filenameBase, storeOverride, periodOverride, targetMultiplier }: Props) {
   const imageRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [pngBusy, setPngBusy] = useState(false);
@@ -31,7 +32,7 @@ export function AiReportSection({ raw, kind, title, firstColLabel, filenameBase,
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("parse-bi", {
-        body: { text: raw, kind },
+        body: { text: raw, kind, targetMultiplier: targetMultiplier ?? 1 },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);

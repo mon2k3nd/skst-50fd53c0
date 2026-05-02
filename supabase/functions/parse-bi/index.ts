@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { text, kind } = await req.json();
+    const { text, kind, targetMultiplier } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Thiếu trường 'text'." }), {
         status: 400,
@@ -139,6 +139,26 @@ Deno.serve(async (req) => {
       });
     }
     const parsed = JSON.parse(call.function.arguments);
+
+    // Apply target multiplier (e.g. 1.1 = 110%) to muc_tieu and recompute % HT
+    const mult = typeof targetMultiplier === "number" && targetMultiplier > 0 ? targetMultiplier : 1;
+    if (mult !== 1 && parsed?.kpis) {
+      if (typeof parsed.kpis.muc_tieu === "number") {
+        parsed.kpis.muc_tieu = +(parsed.kpis.muc_tieu * mult).toFixed(2);
+      }
+      if (typeof parsed.kpis.doanh_thu === "number" && typeof parsed.kpis.muc_tieu === "number" && parsed.kpis.muc_tieu > 0) {
+        parsed.kpis.pct_hoan_thanh = +((parsed.kpis.doanh_thu / parsed.kpis.muc_tieu) * 100).toFixed(2);
+      }
+      if (Array.isArray(parsed.industries)) {
+        for (const it of parsed.industries) {
+          if (typeof it?.lai_gop === "number") {
+            // lai_gop in this schema is reused as Target Ngày on some pages; scale it too
+            it.lai_gop = +(it.lai_gop * mult).toFixed(2);
+          }
+        }
+      }
+    }
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

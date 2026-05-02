@@ -4,7 +4,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AiReportSection } from "@/components/AiReportSection";
 
 export const Route = createFileRoute("/luy-ke")({
@@ -21,6 +22,8 @@ function LuyKePage() {
   const [storeName, setStoreName] = useState("");
   const [endDate, setEndDate] = useState("");
   const [raw, setRaw] = useState("");
+  const [targetPct, setTargetPct] = useState(100);
+  const presets = [100, 110, 120, 130, 140];
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,9 +39,40 @@ function LuyKePage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Hết ngày</CardTitle></CardHeader>
-            <CardContent>
-              <Input value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder="VD: 7/12/2025" />
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Target className="h-4 w-4 text-primary" />
+                Điều chỉnh Target: <span className="text-primary">{targetPct}%</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <input
+                type="range"
+                min={50}
+                max={200}
+                step={5}
+                value={targetPct}
+                onChange={(e) => setTargetPct(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+              <div className="flex flex-wrap gap-2">
+                {presets.map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    size="sm"
+                    variant={targetPct === p ? "default" : "outline"}
+                    onClick={() => setTargetPct(p)}
+                  >
+                    {p}%
+                  </Button>
+                ))}
+              </div>
+              <Input
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="Hết ngày (VD: 7/12/2025)"
+              />
             </CardContent>
           </Card>
         </div>
@@ -60,6 +94,7 @@ function LuyKePage() {
           filenameBase="LuyKe"
           storeOverride={storeName || undefined}
           periodOverride={endDate ? `HẾT NGÀY: ${endDate}` : undefined}
+          targetMultiplier={targetPct / 100}
         />
       </main>
     </div>
