@@ -123,10 +123,10 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgb(80,80,80)", letterSpacing: 0.5 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "rgb(80,80,80)", letterSpacing: 0.5 }}>
                 {c.label}
               </div>
-              <div style={{ fontSize: 30, fontWeight: 900, color: c.color, marginTop: 4 }}>{c.value}</div>
+              <div style={{ fontSize: 34, fontWeight: 900, color: c.color, marginTop: 6 }}>{c.value}</div>
             </div>
           ))}
         </div>
@@ -140,18 +140,18 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
             overflow: "hidden",
           }}
         >
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 18 }}>
             <thead>
               <tr style={{ background: "rgb(255,235,243)", color: "rgb(180,30,90)" }}>
                 {[firstColLabel, "SL", "DTQĐ(TR)", "LÃI GỘP QĐ", "+/- CÙNG KỲ", "ĐƠN GIÁ", "% TRẢ CHẬM"].map((h, i) => (
                   <th
                     key={h}
                     style={{
-                      padding: "10px 10px",
+                      padding: "14px 12px",
                       textAlign: i === 0 ? "left" : "center",
                       fontWeight: 800,
                       borderBottom: "2px solid rgb(225,40,110)",
-                      fontSize: 12,
+                      fontSize: 16,
                     }}
                   >
                     {h}
@@ -162,17 +162,17 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
             <tbody>
               {report.industries.map((r, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid rgb(255,220,232)" }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 700 }}>{r.ten}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center" }}>{fmt(r.sl, 0)}</td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "rgb(28,60,140)", fontWeight: 700 }}>
+                  <td style={{ padding: "14px 14px", fontWeight: 700 }}>{r.ten}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center" }}>{fmt(r.sl, 0)}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center", color: "rgb(28,60,140)", fontWeight: 700 }}>
                     {fmt(r.dtqd)}
                   </td>
-                  <td style={{ padding: "10px 10px", textAlign: "center", color: "rgb(20,110,55)", fontWeight: 700 }}>
+                  <td style={{ padding: "14px 12px", textAlign: "center", color: "rgb(20,110,55)", fontWeight: 700 }}>
                     {fmt(r.lai_gop)}
                   </td>
                   <td
                     style={{
-                      padding: "10px 10px",
+                      padding: "14px 12px",
                       textAlign: "center",
                       color: pctColor(r.cung_ky_pct),
                       fontWeight: 800,
@@ -180,10 +180,10 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
                   >
                     {fmtPct(r.cung_ky_pct)}
                   </td>
-                  <td style={{ padding: "10px 10px", textAlign: "center" }}>{fmt(r.don_gia)}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center" }}>{fmt(r.don_gia)}</td>
                   <td
                     style={{
-                      padding: "10px 10px",
+                      padding: "14px 12px",
                       textAlign: "center",
                       color: pctColor(r.tra_cham_pct, false),
                       fontWeight: 800,
