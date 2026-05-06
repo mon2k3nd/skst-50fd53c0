@@ -123,10 +123,10 @@ export const ReportImage = forwardRef<HTMLDivElement, { report: BiReport; storeO
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgb(80,80,80)", letterSpacing: 0.5 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "rgb(80,80,80)", letterSpacing: 0.5 }}>
                 {c.label}
               </div>
-              <div style={{ fontSize: 30, fontWeight: 900, color: c.color, marginTop: 4 }}>{c.value}</div>
+              <div style={{ fontSize: 34, fontWeight: 900, color: c.color, marginTop: 6 }}>{c.value}</div>
             </div>
           ))}
         </div>
