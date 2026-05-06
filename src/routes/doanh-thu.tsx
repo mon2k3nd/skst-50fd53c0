@@ -33,13 +33,13 @@ function DoanhThuPage() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Tên siêu thị</CardTitle></CardHeader>
             <CardContent>
-              <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="VD: ĐML 37 Cầu Diễn" />
+              <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy" />
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Target Quy Đổi (tr) — tuỳ chọn</CardTitle></CardHeader>
             <CardContent>
-              <Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="VD: 1207" inputMode="decimal" />
+              <Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy" inputMode="decimal" />
             </CardContent>
           </Card>
         </div>

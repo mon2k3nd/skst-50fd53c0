@@ -128,18 +128,18 @@ function NhanVienPage() {
           <CardContent>
             <div className="grid gap-3 md:grid-cols-[1fr_2fr_1fr_auto]">
               <Input
-                placeholder="Mã NV (VD: 133268)"
+                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
               <Input
-                placeholder="Họ tên"
+                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onAdd()}
               />
               <Input
-                placeholder="Target (tr)"
+                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
                 inputMode="decimal"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
