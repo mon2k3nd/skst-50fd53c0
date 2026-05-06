@@ -35,7 +35,7 @@ function LuyKePage() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Tên siêu thị</CardTitle></CardHeader>
             <CardContent>
-              <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy" />
+              <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="VD: TGDĐ 351 Cầu Giấy" />
             </CardContent>
           </Card>
           <Card>
@@ -71,7 +71,7 @@ function LuyKePage() {
               <Input
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
+                placeholder="VD: 20/4/2026"
               />
             </CardContent>
           </Card>

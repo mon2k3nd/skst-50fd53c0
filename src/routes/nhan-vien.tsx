@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { parseTable, toNumber } from "@/lib/parsers";
-import { DollarSign, UserPlus, Trash2, Save, ImageDown, Loader2 } from "lucide-react";
+import { DollarSign, UserPlus, Trash2, Save, ImageDown, Loader2, Upload, Sparkles } from "lucide-react";
 import {
   useEmployees,
   aggregateByEmployee,
@@ -17,6 +18,7 @@ import { ExportPdfButton } from "@/components/ExportPdfButton";
 import { ReportImage, type BiReport } from "@/components/ReportImage";
 import { downloadElementAsPng } from "@/lib/image";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/nhan-vien")({
   component: NhanVienPage,
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/nhan-vien")({
 });
 
 function NhanVienPage() {
-  const { list, add, update, remove } = useEmployees();
+  const { list, add, update, remove, setAll } = useEmployees();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
@@ -44,17 +46,33 @@ function NhanVienPage() {
     () => aggregateByEmployee(parsed.headers, parsed.rows),
     [parsed],
   );
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiAgg, setAiAgg] = useState<Map<string, number> | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const salesFileRef = useRef<HTMLInputElement>(null);
 
   const reportRef = useRef<HTMLDivElement>(null);
   const [pngBusy, setPngBusy] = useState(false);
 
   const rows = useMemo(() => {
+    const useAi = aiAgg && aiAgg.size > 0;
     return list.map((e) => {
-      const actual = findEmployeeValue(e, agg);
+      let actual = 0;
+      if (useAi) {
+        // try by code, then by name (loose)
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        for (const [k, v] of aiAgg!) {
+          if (e.code && k.includes(e.code)) { actual = v; break; }
+          if (e.name && norm(k).includes(norm(e.name))) { actual = v; break; }
+        }
+      } else {
+        actual = findEmployeeValue(e, agg);
+      }
       const pct = e.target > 0 ? (actual / e.target) * 100 : 0;
       return { emp: e, actual, pct };
     });
-  }, [list, agg]);
+  }, [list, agg, aiAgg]);
 
   const totalActual = rows.reduce((s, r) => s + r.actual, 0);
   const totalTarget = list.reduce((s, e) => s + e.target, 0);
@@ -109,37 +127,126 @@ function NhanVienPage() {
     setTarget("");
   };
 
+  async function fileToText(file: File): Promise<string> {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".xlsx") || lower.endsWith(".xls") || lower.endsWith(".xlsm")) {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      let out = "";
+      for (const sn of wb.SheetNames) {
+        out += `# ${sn}\n` + XLSX.utils.sheet_to_csv(wb.Sheets[sn]) + "\n";
+      }
+      return out;
+    }
+    return await file.text();
+  }
+
+  async function onImportEmployees(file: File) {
+    setImportBusy(true);
+    try {
+      const text = await fileToText(file);
+      const { data, error } = await supabase.functions.invoke("parse-employees", { body: { text } });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const emps = (data as { employees: { code?: string; name: string; target?: number | null }[] }).employees ?? [];
+      if (!emps.length) { toast.error("AI không tìm thấy nhân viên."); return; }
+      const next = emps.map((e) => ({
+        id: crypto.randomUUID(),
+        code: e.code ?? "",
+        name: e.name,
+        target: typeof e.target === "number" ? e.target : 0,
+      }));
+      setAll(next);
+      toast.success(`Đã thêm ${next.length} nhân viên từ file.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không đọc được file.");
+    } finally {
+      setImportBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function onImportSales(file: File) {
+    setAiBusy(true);
+    try {
+      const text = await fileToText(file);
+      setRaw(text);
+      await runAiSales(text);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không đọc được file.");
+    } finally {
+      if (salesFileRef.current) salesFileRef.current.value = "";
+    }
+  }
+
+  async function runAiSales(textInput?: string) {
+    const text = textInput ?? raw;
+    if (!text.trim()) { toast.error("Hãy dán/đẩy file số bán."); return; }
+    setAiBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-bi", {
+        body: { text, kind: "nhan-vien", targetMultiplier: 1 },
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const rep = data as BiReport;
+      const map = new Map<string, number>();
+      (rep.industries ?? []).forEach((it) => {
+        if (it.ten && typeof it.dtqd === "number") map.set(it.ten, it.dtqd);
+      });
+      setAiAgg(map);
+      toast.success(`AI phân tích xong: ${map.size} dòng.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI lỗi.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-8">
         <h1 className="text-3xl font-extrabold text-foreground">Quản Lý Nhân Viên</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Lưu danh sách nhân viên (cục bộ trên trình duyệt). Dán file số bán → tự lọc theo mã/tên → xuất báo cáo hoàn thành.
+          Đẩy file Excel/CSV nhân viên để AI tự thêm. Đẩy file số bán để AI phân tích → xuất báo cáo.
         </p>
 
         {/* Add form */}
         <Card className="mt-6 shadow-[var(--shadow-card)]">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-info">
-              <UserPlus className="h-4 w-4" /> Thêm nhân viên
+            <CardTitle className="flex items-center justify-between gap-2 text-base text-info">
+              <span className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Thêm nhân viên</span>
+              <span className="flex items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,.txt"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && onImportEmployees(e.target.files[0])}
+                />
+                <Button size="sm" variant="outline" disabled={importBusy} onClick={() => fileRef.current?.click()}>
+                  {importBusy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1 h-3.5 w-3.5" />}
+                  {importBusy ? "Đang đọc..." : "Đẩy file NV (AI)"}
+                </Button>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-[1fr_2fr_1fr_auto]">
               <Input
-                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
+                placeholder="VD: NV001"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
               <Input
-                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
+                placeholder="VD: Nguyễn Văn A"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onAdd()}
               />
               <Input
-                placeholder="Ví dụ Nhập TGDĐ 351 Cầu Giấy"
+                placeholder="VD: 200 (triệu)"
                 inputMode="decimal"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
@@ -175,6 +282,23 @@ function NhanVienPage() {
             icon={<DollarSign className="h-4 w-4" />}
             rows={8}
           />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              ref={salesFileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.txt"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && onImportSales(e.target.files[0])}
+            />
+            <Button variant="outline" onClick={() => salesFileRef.current?.click()} disabled={aiBusy}>
+              <Upload className="mr-2 h-4 w-4" /> Đẩy file số bán
+            </Button>
+            <Button onClick={() => runAiSales()} disabled={aiBusy || !raw.trim()}>
+              {aiBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {aiBusy ? "Đang phân tích..." : "Phân tích bằng AI"}
+            </Button>
+            {aiAgg && <span className="text-xs text-muted-foreground">AI đã khớp {aiAgg.size} dòng.</span>}
+          </div>
           {parsed.rows.length > 0 && (
             <div className="mt-2 text-xs text-muted-foreground">
               Phát hiện cột:{" "}
