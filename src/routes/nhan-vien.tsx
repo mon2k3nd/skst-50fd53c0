@@ -178,10 +178,26 @@ function NhanVienPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-8">
-        <h1 className="text-3xl font-extrabold text-foreground">Thi Đua Nhân Viên</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Dán 3 khối dữ liệu (Thi đua siêu thị, Thi đua nhân viên, Doanh thu nhân viên). AI sẽ phân tích & cho bạn chia target từng nhân viên bằng thanh kéo.
-        </p>
+        <div className="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-info/10 p-6 shadow-[var(--shadow-card)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Thi Đua Nhân Viên</h1>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                Dán 3 khối dữ liệu (Thi đua siêu thị, Thi đua nhân viên, Doanh thu nhân viên). AI tự phân tích khi đủ dữ liệu — bạn chia target bằng thanh kéo.
+              </p>
+            </div>
+            <label className="flex cursor-pointer select-none items-center gap-2 rounded-full border bg-background/70 px-3 py-1.5 text-xs font-medium shadow-sm">
+              <input
+                type="checkbox"
+                checked={autoRun}
+                onChange={(e) => setAutoRun(e.target.checked)}
+                className="accent-primary"
+              />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              AI tự chạy khi dữ liệu đổi
+            </label>
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           <DataPasteCard
