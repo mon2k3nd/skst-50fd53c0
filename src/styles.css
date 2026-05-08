@@ -103,20 +103,20 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
-  --brand: oklch(0.35 0.08 50);
-  --brand-foreground: oklch(0.95 0.05 90);
+  --brand: oklch(0.58 0.22 8);
+  --brand-foreground: oklch(0.99 0 0);
   --success: oklch(0.62 0.17 155);
   --success-foreground: oklch(0.99 0 0);
   --warning: oklch(0.75 0.18 70);
   --warning-foreground: oklch(0.2 0.05 50);
   --info: oklch(0.6 0.18 250);
   --info-foreground: oklch(0.99 0 0);
-  --gradient-hero: linear-gradient(135deg, oklch(0.35 0.08 50), oklch(0.45 0.1 40));
+  --gradient-hero: linear-gradient(135deg, oklch(0.58 0.22 8), oklch(0.7 0.2 350));
   --gradient-success: linear-gradient(135deg, oklch(0.62 0.17 155), oklch(0.7 0.18 145));
   --gradient-warning: linear-gradient(135deg, oklch(0.75 0.18 70), oklch(0.8 0.2 60));
   --gradient-info: linear-gradient(135deg, oklch(0.6 0.18 250), oklch(0.65 0.2 270));
-  --shadow-card: 0 4px 20px -4px oklch(0.35 0.08 50 / 0.15);
-  --shadow-elevated: 0 10px 40px -10px oklch(0.35 0.08 50 / 0.25);
+  --shadow-card: 0 4px 20px -4px oklch(0.58 0.22 8 / 0.18);
+  --shadow-elevated: 0 10px 40px -10px oklch(0.58 0.22 8 / 0.28);
 }
 
 .dark {
