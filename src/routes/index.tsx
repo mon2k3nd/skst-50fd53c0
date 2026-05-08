@@ -59,11 +59,10 @@ function Index() {
             ★ Công cụ phân tích nhanh
           </span>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            THEO DÕI <span className="text-info">SỨC KHOẺ</span> SIÊU THỊ
+            <span className="text-brand">SỨC KHOẺ</span> SIÊU THỊ
           </h1>
           <p className="mt-4 text-base text-muted-foreground md:text-lg">
-            Dán dữ liệu từ báo cáo BI vào ô tương ứng — hệ thống tự phân tích, không cần kết nối
-            cơ sở dữ liệu.
+            Dán dữ liệu BI — hệ thống tự phân tích.
           </p>
         </div>
 
@@ -92,19 +91,6 @@ function Index() {
           })}
         </div>
 
-        <div className="mt-10 rounded-xl border-2 border-dashed border-info/30 bg-info/5 p-5">
-          <div className="flex items-start gap-3">
-            <div className="rounded-md bg-info/15 p-2 text-info">
-              <FileDown className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-foreground">Xuất báo cáo PDF gửi quản lý</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Mỗi mục (Doanh Thu, Thi Đua, Luỹ Kế, Nhân Viên) đều có nút <strong>Xuất PDF</strong> ở góc phải sau khi bạn dán dữ liệu. Mở từng trang → dán dữ liệu → bấm <strong>Xuất PDF</strong> để tải file gửi cấp trên.
-              </p>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );
