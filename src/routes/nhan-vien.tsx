@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,8 @@ function NhanVienPage() {
   const [block3, setBlock3] = useState("");
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<ParsedData | null>(null);
+  const [autoRun, setAutoRun] = useState(true);
+  const lastSigRef = useRef<string>("");
   // shareMatrix[empIdx][indIdx] = % share (0..100+) on that industry's target
   const [shareMatrix, setShareMatrix] = useState<number[][]>([]);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
@@ -67,6 +69,20 @@ function NhanVienPage() {
       setBusy(false);
     }
   }
+
+  // Auto-run AI khi cả 3 ô có dữ liệu và đã ổn định ~1.2s
+  useEffect(() => {
+    if (!autoRun) return;
+    if (!block1.trim() || !block2.trim() || !block3.trim()) return;
+    const sig = `${block1.length}|${block2.length}|${block3.length}|${block1.slice(0, 40)}|${block2.slice(0, 40)}|${block3.slice(0, 40)}`;
+    if (sig === lastSigRef.current) return;
+    const t = setTimeout(() => {
+      lastSigRef.current = sig;
+      runAi();
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [block1, block2, block3, autoRun]);
 
   // % tổng = trung bình theo target (weight). Đơn giản: trung bình các % theo trọng số target.
   const empSummary = useMemo(() => {
