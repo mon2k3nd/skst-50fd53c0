@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -18,12 +18,9 @@ import {
   Sparkles,
   Loader2,
   ImageDown,
-  ChevronDown,
-  ChevronUp,
   Users,
   BarChart3,
-  Target,
-  ArrowRight,
+  Store as StoreIcon,
 } from "lucide-react";
 import { EmpReportImage } from "@/components/EmpReportImage";
 import { ExportPdfButton } from "@/components/ExportPdfButton";
@@ -50,17 +47,17 @@ function NhanVienPage() {
   const [block1, setBlock1] = useState("");
   const [block2, setBlock2] = useState("");
   const [block3, setBlock3] = useState("");
+  const [shopName, setShopName] = useState("");
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<ParsedData | null>(null);
-  const [autoRun, setAutoRun] = useState(true);
+  const [autoRun, setAutoRun] = useState(false);
   const lastSigRef = useRef<string>("");
 
-  // Dialog state machine: idle | targets | industries
-  const [step, setStep] = useState<"idle" | "targets" | "industries">("idle");
+  // Dialog state: idle | industries
+  const [step, setStep] = useState<"idle" | "industries">("idle");
 
   // shareMatrix[empIdx][indIdx]
   const [shareMatrix, setShareMatrix] = useState<number[][]>([]);
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   // Industry selection
   const [selectedInds, setSelectedInds] = useState<Set<number>>(new Set());
@@ -73,6 +70,10 @@ function NhanVienPage() {
   const [pickedReports, setPickedReports] = useState<Set<string>>(new Set());
 
   async function runAi() {
+    if (!shopName.trim()) {
+      toast.error("Vui lòng nhập Tên Shop trước khi phân tích.");
+      return;
+    }
     if (!block1.trim() || !block2.trim() || !block3.trim()) {
       toast.error("Hãy dán đủ 3 ô dữ liệu.");
       return;
@@ -85,15 +86,16 @@ function NhanVienPage() {
       if (error) throw error;
       if ((res as { error?: string })?.error) throw new Error((res as { error: string }).error);
       const p = res as ParsedData;
+      // Override store with the user-entered shop name
+      p.store_name = shopName.trim();
       setData(p);
       const empN = p.employees.length;
       const indN = p.industries.length;
       const equal = empN > 0 ? +(100 / empN).toFixed(2) : 0;
       setShareMatrix(Array.from({ length: empN }, () => Array(indN).fill(equal)));
-      setExpanded({});
       setSelectedInds(new Set(p.industries.map((_, i) => i)));
       setRendered(false);
-      setStep("targets");
+      setStep("industries");
       toast.success(`AI xong: ${empN} NV × ${indN} ngành.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "AI lỗi.");
@@ -104,6 +106,7 @@ function NhanVienPage() {
 
   useEffect(() => {
     if (!autoRun) return;
+    if (!shopName.trim()) return;
     if (!block1.trim() || !block2.trim() || !block3.trim()) return;
     const sig = `${block1.length}|${block2.length}|${block3.length}|${block1.slice(0, 40)}|${block2.slice(0, 40)}|${block3.slice(0, 40)}`;
     if (sig === lastSigRef.current) return;
@@ -113,7 +116,7 @@ function NhanVienPage() {
     }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [block1, block2, block3, autoRun]);
+  }, [block1, block2, block3, autoRun, shopName]);
 
   // Compute per-employee per-industry numbers
   const empSummary = useMemo(() => {
@@ -134,29 +137,19 @@ function NhanVienPage() {
     });
   }, [data, shareMatrix]);
 
-  const indShareSum = useMemo(() => {
-    if (!data) return [];
-    return data.industries.map((_, ii) =>
-      shareMatrix.reduce((s, row) => s + (row[ii] ?? 0), 0),
-    );
-  }, [data, shareMatrix]);
-
-  function setEmpTotalShare(empIdx: number, newTotal: number) {
-    setShareMatrix((mat) => {
-      const row = [...(mat[empIdx] ?? [])];
-      const oldTotal = row.reduce((s, v) => s + v, 0);
-      const newRow =
-        oldTotal <= 0
-          ? row.map(() => +(newTotal / row.length).toFixed(2))
-          : row.map((v) => +(v * (newTotal / oldTotal)).toFixed(2));
-      return mat.map((r, i) => (i === empIdx ? newRow : r));
-    });
-  }
-  function setEmpIndShare(empIdx: number, indIdx: number, val: number) {
-    setShareMatrix((mat) =>
-      mat.map((r, i) => (i === empIdx ? r.map((v, j) => (j === indIdx ? +val.toFixed(2) : v)) : r)),
-    );
-  }
+  // Date + projection helpers
+  const todayInfo = useMemo(() => {
+    const now = new Date();
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dd = String(dayOfMonth).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    return {
+      dateLabel: `${dd}/${mm}/${yyyy}`,
+      ratio: daysInMonth / dayOfMonth,
+    };
+  }, [rendered]);
 
   // Selected industries to render (in order)
   const selectedIndList = useMemo(() => {
@@ -171,35 +164,51 @@ function NhanVienPage() {
     return selectedIndList.map(({ idx, ind }) => ({
       ind,
       idx,
-      rows: empSummary.map((e) => {
-        const pi = e.perInd[idx];
-        return {
-          code: e.emp.code,
-          name: e.emp.name,
-          target: pi.target,
-          actual: pi.actual,
-          pct: pi.pct,
-        };
-      }),
+      rows: (() => {
+        const base = empSummary.map((e) => {
+          const pi = e.perInd[idx];
+          const pct = pi.pct;
+          const projectedPct = pi.target > 0 ? (pi.actual / pi.target) * todayInfo.ratio * 100 : 0;
+          return {
+            code: e.emp.code,
+            name: e.emp.name,
+            target: pi.target,
+            actual: pi.actual,
+            pct,
+            projectedPct,
+            dateLabel: todayInfo.dateLabel,
+          };
+        });
+        // Sort best -> worst by projectedPct, then assign rank
+        base.sort((a, b) => (b.projectedPct ?? 0) - (a.projectedPct ?? 0));
+        return base.map((r, i) => ({ ...r, rank: i + 1 }));
+      })(),
     }));
-  }, [selectedIndList, empSummary]);
+  }, [selectedIndList, empSummary, todayInfo]);
 
   // Top summary rows: each emp -> achieved x of N selected industries
   const summaryRows = useMemo(() => {
-    return empSummary.map((e) => {
+    const base = empSummary.map((e) => {
       let won = 0;
       selectedIndList.forEach(({ idx }) => {
-        if ((e.perInd[idx]?.pct ?? 0) >= 100) won += 1;
+        const pi = e.perInd[idx];
+        const proj = pi && pi.target > 0 ? (pi.actual / pi.target) * todayInfo.ratio * 100 : 0;
+        if (proj >= 100) won += 1;
       });
+      const pct = selectedIndList.length > 0 ? (won / selectedIndList.length) * 100 : 0;
       return {
         code: e.emp.code,
         name: e.emp.name,
         target: won, // reuse field — will display as count
         actual: selectedIndList.length,
-        pct: selectedIndList.length > 0 ? (won / selectedIndList.length) * 100 : 0,
+        pct,
+        projectedPct: pct,
+        dateLabel: todayInfo.dateLabel,
       };
     });
-  }, [empSummary, selectedIndList]);
+    base.sort((a, b) => b.pct - a.pct);
+    return base.map((r, i) => ({ ...r, rank: i + 1 }));
+  }, [empSummary, selectedIndList, todayInfo]);
 
   function confirmIndustriesAndRender() {
     if (selectedInds.size === 0) {
@@ -256,6 +265,19 @@ function NhanVienPage() {
               AI tự chạy
             </label>
           </div>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="min-w-[260px] flex-1">
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-brand">
+                <StoreIcon className="h-3.5 w-3.5" /> Tên Shop (bắt buộc)
+              </label>
+              <Input
+                value={shopName}
+                onChange={(e) => setShopName(e.target.value)}
+                placeholder="VD: Siêu Thị Hải Phòng 1"
+                maxLength={100}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -286,11 +308,6 @@ function NhanVienPage() {
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          {data && (
-            <Button variant="outline" onClick={() => setStep("targets")}>
-              <Target className="mr-2 h-4 w-4" /> Chỉnh target
-            </Button>
-          )}
           <Button onClick={runAi} disabled={busy} className="bg-brand text-brand-foreground hover:bg-brand/90">
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             {busy ? "Đang phân tích..." : "Phân tích"}
@@ -345,107 +362,7 @@ function NhanVienPage() {
         )}
       </main>
 
-      {/* Step 1: Targets dialog */}
-      <Dialog
-        open={step === "targets"}
-        onOpenChange={(o) => {
-          if (!o) setStep("idle");
-        }}
-      >
-        <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-brand">Chia target nhân viên</DialogTitle>
-            <DialogDescription>
-              Kéo thanh "Tổng" để scale, mở ▾ để chỉnh từng ngành. Tổng đội có thể vượt 100%.
-            </DialogDescription>
-          </DialogHeader>
-
-          {data && (
-            <div className="space-y-3">
-              <div className="rounded-md bg-muted/40 p-3 text-xs">
-                <div className="mb-1 font-semibold">Tổng share theo ngành (toàn đội):</div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {data.industries.map((ind, ii) => {
-                    const sum = indShareSum[ii] ?? 0;
-                    const cls = sum >= 100 ? "text-emerald-600" : "text-amber-600";
-                    return (
-                      <span key={ii} className={cls}>
-                        <strong>{ind.name}</strong> ({ind.unit}): {sum.toFixed(0)}%
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {empSummary.map((row, ei) => {
-                const totalShare = (shareMatrix[ei] ?? []).reduce((s, v) => s + v, 0);
-                const isOpen = expanded[ei];
-                return (
-                  <div key={ei} className="rounded-lg border bg-card p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <span className="font-semibold">
-                          {row.emp.code ? `${row.emp.code} · ` : ""}
-                          {row.emp.name}
-                        </span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setExpanded((s) => ({ ...s, [ei]: !s[ei] }))}
-                      >
-                        {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <div className="mt-2 grid grid-cols-[80px_1fr_60px] items-center gap-3">
-                      <span className="text-xs font-medium">Tổng</span>
-                      <Slider
-                        value={[Math.min(200, totalShare)]}
-                        max={200}
-                        step={1}
-                        onValueChange={(v) => setEmpTotalShare(ei, v[0])}
-                      />
-                      <span className="text-right text-xs font-mono">{totalShare.toFixed(0)}%</span>
-                    </div>
-                    {isOpen && (
-                      <div className="mt-2 space-y-1.5 border-t pt-2">
-                        {row.perInd.map((p, ii) => (
-                          <div key={ii} className="grid grid-cols-[1fr_2fr_80px] items-center gap-3 text-xs">
-                            <span className="truncate" title={p.ind.name}>
-                              {p.ind.name}
-                            </span>
-                            <Slider
-                              value={[Math.min(200, p.sharePct)]}
-                              max={200}
-                              step={1}
-                              onValueChange={(v) => setEmpIndShare(ei, ii, v[0])}
-                            />
-                            <span className="text-right font-mono">{p.sharePct.toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep("idle")}>
-              Đóng
-            </Button>
-            <Button
-              onClick={() => setStep("industries")}
-              className="bg-brand text-brand-foreground hover:bg-brand/90"
-            >
-              Tiếp tục <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Step 2: Industry picker */}
+      {/* Industry picker */}
       <Dialog
         open={step === "industries"}
         onOpenChange={(o) => {
@@ -503,8 +420,8 @@ function NhanVienPage() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStep("targets")}>
-              Quay lại
+            <Button variant="outline" onClick={() => setStep("idle")}>
+              Đóng
             </Button>
             <Button
               onClick={confirmIndustriesAndRender}
