@@ -19,7 +19,6 @@ export function CreditBadge() {
       href="https://www.facebook.com/phd873"
       target="_blank"
       rel="noopener noreferrer"
-      style={{ bottom: "calc(var(--footer-lift, 2.25rem) + 0.75rem)" }}
       className="group fixed right-4 z-40 flex items-center gap-2 overflow-hidden rounded-full px-4 py-2 text-xs font-bold shadow-card backdrop-blur-md transition-all duration-500 hover:scale-105 hover:shadow-lg"
       style={{
         bottom: "calc(var(--footer-lift, 2.25rem) + 0.75rem)",
