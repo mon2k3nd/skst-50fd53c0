@@ -112,7 +112,7 @@ export async function exportElementsToPdf(
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
-      onclone: (doc, clonedEl) => {
+      onclone: (doc: Document, clonedEl: Element) => {
         sanitizeColors(clonedEl as HTMLElement);
         // Also walk the entire cloned document body so ancestor backgrounds
         // (e.g. body/main) don't break with oklch.

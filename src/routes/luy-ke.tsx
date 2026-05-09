@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useSessionState } from "@/lib/useSessionState";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,10 +19,10 @@ export const Route = createFileRoute("/luy-ke")({
 });
 
 function LuyKePage() {
-  const [storeName, setStoreName] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [raw, setRaw] = useState("");
-  const [targetPct, setTargetPct] = useState(100);
+  const [storeName, setStoreName] = useSessionState("lk.storeName", "");
+  const [endDate, setEndDate] = useSessionState("lk.endDate", "");
+  const [raw, setRaw] = useSessionState("lk.raw", "");
+  const [targetPct, setTargetPct] = useSessionState("lk.targetPct", 100);
   const presets = [100, 110, 120, 130, 140];
 
   return (

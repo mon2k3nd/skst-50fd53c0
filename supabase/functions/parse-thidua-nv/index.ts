@@ -9,15 +9,20 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `Bạn là trợ lý phân tích báo cáo BI bán lẻ tiếng Việt cho chuỗi siêu thị MWG/TGDĐ/ĐMX.
 Người dùng dán 3 khối dữ liệu thô:
 - block1 = "Thi đua siêu thị (luỹ kế)" theo ngành hàng (DT/SL Realtime, Target Ngày, %HT...).
-- block2 = "Thi đua nhân viên" — bảng pivot: cột là ngành hàng, dòng là nhân viên, giá trị là DTLK / SLLK đã làm được.
-- block3 = "Doanh thu nhân viên" — danh sách doanh thu thực hiện theo từng nhân viên (có thể có ngành hàng kèm).
+- block2 = "Thi đua nhân viên" — bảng pivot: cột là ngành hàng, dòng là nhân viên. Có thể có TARGET cá nhân của từng nhân viên cho từng ngành hàng (cột "Target Ngày" / "Target NV"), và DTLK / SLLK đã làm được.
+- block3 = "Doanh thu nhân viên" — danh sách doanh thu thực hiện theo từng nhân viên.
 
 Nhiệm vụ:
 1) Suy luận tên siêu thị (nếu có) và mốc thời gian.
-2) Trích xuất danh sách NGÀNH HÀNG từ block1: tên ngành hàng, đơn vị (DT hay SL), target ngày của ngành hàng đó.
-3) Trích xuất danh sách NHÂN VIÊN từ block2 + block3 (gộp lại, loại bỏ dòng "Tổng" và dòng nhóm "BP ..."). Mỗi nhân viên: code (mã nếu có), name, và "achieved" theo từng ngành hàng (map theo tên ngành hàng giống block1).
-4) Số liệu giữ nguyên đơn vị nguồn (triệu cho DT, cái cho SL). Dùng dấu chấm thập phân.
-5) KHÔNG bịa nhân viên không có trong nguồn.`;
+2) Trích xuất danh sách NGÀNH HÀNG từ block1: tên ngành hàng đầy đủ, đơn vị (DT hay SL), target ngày của siêu thị, achieved_total (DT/SL Realtime của siêu thị).
+3) Trích xuất danh sách NHÂN VIÊN từ block2 + block3 (gộp theo mã/tên, loại bỏ dòng "Tổng" và dòng nhóm "BP ..."). Mỗi nhân viên:
+   - code (mã nếu có), name
+   - achieved[]: { industry, value } — DT/SL đã làm được theo từng ngành (lấy từ block2/block3)
+   - targets[]: { industry, value } — TARGET cá nhân của nhân viên đó cho ngành đó.
+     * Nếu block2 có sẵn cột target cá nhân → dùng trực tiếp.
+     * Nếu KHÔNG có target cá nhân trong nguồn → tự tính: target_NV = target_ngành × (achieved_NV_đó / tổng_achieved_tất_cả_NV_trong_ngành). Nếu tổng achieved = 0 thì chia đều.
+4) Tên industry trong achieved[] và targets[] PHẢI khớp chính xác industries[].name.
+5) Số liệu giữ nguyên đơn vị nguồn. Dùng dấu chấm thập phân. KHÔNG bịa nhân viên.`;
 
 const TOOL = {
   type: "function",
@@ -34,10 +39,10 @@ const TOOL = {
           items: {
             type: "object",
             properties: {
-              name: { type: "string", description: "Tên ngành hàng đầy đủ" },
-              unit: { type: "string", enum: ["DT", "SL"], description: "DT = doanh thu (triệu), SL = số lượng" },
-              target: { type: ["number", "null"], description: "Target Ngày của ngành hàng (tổng siêu thị)" },
-              achieved_total: { type: ["number", "null"], description: "Tổng đã đạt của siêu thị (Realtime)" },
+              name: { type: "string" },
+              unit: { type: "string", enum: ["DT", "SL"] },
+              target: { type: ["number", "null"] },
+              achieved_total: { type: ["number", "null"] },
             },
             required: ["name", "unit"],
             additionalProperties: false,
@@ -52,7 +57,19 @@ const TOOL = {
               name: { type: "string" },
               achieved: {
                 type: "array",
-                description: "Doanh thu/số lượng đã làm theo từng ngành hàng. Tên ngành hàng phải khớp với industries[].name.",
+                items: {
+                  type: "object",
+                  properties: {
+                    industry: { type: "string" },
+                    value: { type: "number" },
+                  },
+                  required: ["industry", "value"],
+                  additionalProperties: false,
+                },
+              },
+              targets: {
+                type: "array",
+                description: "Target cá nhân của NV cho từng ngành hàng.",
                 items: {
                   type: "object",
                   properties: {
@@ -64,7 +81,7 @@ const TOOL = {
                 },
               },
             },
-            required: ["name", "achieved"],
+            required: ["name", "achieved", "targets"],
             additionalProperties: false,
           },
         },

@@ -1,10 +1,19 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { Toaster } from "@/components/ui/sonner";
+import { SeasonProvider } from "@/lib/season";
+import { SeasonFooter } from "@/components/SeasonFooter";
 import { CreditBadge } from "@/components/layout/CreditBadge";
-import { Footer } from "@/components/layout/Footer";
-import { SeasonProvider } from "@/contexts/SeasonContext";
+import { HelpChatbot } from "@/components/HelpChatbot";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -28,39 +37,78 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRoute({
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  console.error(error);
+  const router = useRouter();
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          This page didn't load
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something went wrong on our end. You can try refreshing or head back home.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Try again
+          </button>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Go home
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "MetricHub – Real-time Data, Real-time Success" },
-      { name: "description", content: "MetricHub: real-time data analytics for retail sales, employee performance, and cumulative growth." },
-      { name: "author", content: "MetricHub" },
+      { name: "description", content: "MetricHub – nền tảng phân tích sức khoẻ siêu thị realtime theo mùa." },
+      { name: "author", content: "Phùng Hữu Đô" },
       { property: "og:title", content: "MetricHub – Real-time Data, Real-time Success" },
-      { property: "og:description", content: "MetricHub: real-time data analytics for retail sales, employee performance, and cumulative growth." },
+      { property: "og:description", content: "MetricHub – nền tảng phân tích sức khoẻ siêu thị realtime theo mùa." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "MetricHub – Real-time Data, Real-time Success" },
-      { name: "twitter:description", content: "MetricHub: real-time data analytics for retail sales, employee performance, and cumulative growth." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/649ab18a-0675-4f69-8208-5054a3c7004b/id-preview-9f25f10f--a2c0c652-a243-4bc7-8522-daf1a0d2488a.lovable.app-1778264083114.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/649ab18a-0675-4f69-8208-5054a3c7004b/id-preview-9f25f10f--a2c0c652-a243-4bc7-8522-daf1a0d2488a.lovable.app-1778264083114.png" },
+      { name: "twitter:description", content: "MetricHub – nền tảng phân tích sức khoẻ siêu thị realtime theo mùa." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a5bfe7f-5e4c-4193-8777-9d1812d529ee/id-preview-f1f4b16c--c36e53f0-ae20-4dbf-801c-424d101f74be.lovable.app-1778265517485.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a5bfe7f-5e4c-4193-8777-9d1812d529ee/id-preview-f1f4b16c--c36e53f0-ae20-4dbf-801c-424d101f74be.lovable.app-1778265517485.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/webp", href: "/logo-mwg.webp" },
+      { rel: "apple-touch-icon", href: "/logo-mwg.webp" },
     ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className="season-autumn">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body className="pb-16">
+      <body>
         {children}
         <Scripts />
       </body>
@@ -69,12 +117,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
   return (
-    <SeasonProvider>
-      <Outlet />
-      <Toaster richColors position="top-right" />
-      <CreditBadge />
-      <Footer />
-    </SeasonProvider>
+    <QueryClientProvider client={queryClient}>
+      <SeasonProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+        <SeasonFooter />
+        <CreditBadge />
+        <HelpChatbot />
+      </SeasonProvider>
+    </QueryClientProvider>
   );
 }
