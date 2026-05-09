@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useSessionState } from "@/lib/useSessionState";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Trophy } from "lucide-react";
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/thi-dua")({
 });
 
 function ThiDuaPage() {
-  const [raw, setRaw] = useState("");
+  const [raw, setRaw] = useSessionState("td.raw", "");
 
   return (
     <div className="min-h-screen bg-background">

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useSessionState } from "@/lib/useSessionState";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataPasteCard } from "@/components/DataPasteCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +18,9 @@ export const Route = createFileRoute("/doanh-thu")({
 });
 
 function DoanhThuPage() {
-  const [storeName, setStoreName] = useState("");
-  const [target, setTarget] = useState("");
-  const [raw, setRaw] = useState("");
+  const [storeName, setStoreName] = useSessionState("dt.storeName", "");
+  const [target, setTarget] = useSessionState("dt.target", "");
+  const [raw, setRaw] = useSessionState("dt.raw", "");
 
   return (
     <div className="min-h-screen bg-background">
