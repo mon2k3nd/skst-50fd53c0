@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { SeasonProvider } from "@/lib/season";
 import { SeasonFooter } from "@/components/SeasonFooter";
+import { SeasonEffects } from "@/components/SeasonEffects";
 import { CreditBadge } from "@/components/layout/CreditBadge";
 import { HelpChatbot } from "@/components/HelpChatbot";
 import { Toaster } from "@/components/ui/sonner";
@@ -122,6 +123,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <SeasonProvider>
+        <SeasonEffects />
         <Outlet />
         <Toaster richColors position="top-right" />
         <SeasonFooter />

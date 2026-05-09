@@ -186,3 +186,48 @@
   .bg-gradient-header { background: var(--gradient-header); }
   .shadow-card { box-shadow: var(--shadow-card); }
 }
+
+/* ===== Seasonal particle FX ===== */
+@keyframes season-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(var(--rot, 0deg));
+  }
+}
+.season-particle {
+  animation-name: season-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+  filter: drop-shadow(0 2px 4px oklch(0 0 0 / 0.15));
+}
+
+/* Floating greeting bubble */
+@keyframes pop-in {
+  0% { transform: translateY(8px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.animate-pop-in { animation: pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Shine effect for credit badge */
+@keyframes badge-shine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.badge-shine {
+  background-image: linear-gradient(110deg,
+    transparent 30%,
+    oklch(1 0 0 / 0.45) 50%,
+    transparent 70%);
+  background-size: 200% 100%;
+  animation: badge-shine 3.5s linear infinite;
+}
+
+/* Slow float */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float { animation: float-y 4s ease-in-out infinite; }
