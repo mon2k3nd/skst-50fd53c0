@@ -21,6 +21,7 @@ const SUGGESTIONS = [
 export function HelpChatbot() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hint, setHint] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
@@ -33,6 +34,25 @@ export function HelpChatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  // Greeting hint: show "Bạn có cần hỗ trợ gì không?" for 10s, repeat every 5 minutes.
+  useEffect(() => {
+    if (!mounted) return;
+    const showOnce = () => {
+      if (open) return;
+      setHint(true);
+      window.setTimeout(() => setHint(false), 10_000);
+    };
+    const first = window.setTimeout(showOnce, 1500); // appear shortly after load
+    const loop = window.setInterval(showOnce, 5 * 60 * 1000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(loop);
+    };
+  }, [mounted, open]);
+
+  useEffect(() => { if (open) setHint(false); }, [open]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, busy]);
@@ -105,6 +125,26 @@ export function HelpChatbot() {
 
   return (
     <>
+      {/* Greeting hint bubble */}
+      {hint && !open && (
+        <div
+          style={{ bottom: "calc(var(--footer-lift, 2.25rem) + 4rem)" }}
+          className="fixed right-20 z-50 animate-pop-in"
+        >
+          <div className="relative max-w-[220px] rounded-2xl rounded-br-sm bg-card border shadow-card px-3.5 py-2.5 text-sm font-medium text-foreground">
+            <button
+              onClick={() => setHint(false)}
+              aria-label="Đóng"
+              className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-muted text-foreground/60 text-xs hover:text-foreground"
+            >
+              ×
+            </button>
+            👋 Bạn có cần hỗ trợ gì không?
+            <span className="absolute -bottom-1.5 right-3 h-3 w-3 rotate-45 bg-card border-b border-r" />
+          </div>
+        </div>
+      )}
+
       {/* Floating button — right side, above credit badge, lifts with footer */}
       <button
         onClick={() => setOpen((o) => !o)}
@@ -112,6 +152,9 @@ export function HelpChatbot() {
         className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-card transition-all duration-500 hover:scale-110"
         aria-label="Trợ lý MetricHub"
       >
+        {hint && !open && (
+          <span className="absolute inset-0 rounded-full ring-4 ring-brand/30 animate-ping" />
+        )}
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
 
