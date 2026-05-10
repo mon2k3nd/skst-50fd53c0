@@ -14,6 +14,14 @@ const SeasonCtx = createContext<Ctx>({ season: "spring", setSeason: () => {} });
 
 const KEY = "metrichub.season";
 
+function seasonByMonth(): Season {
+  const m = new Date().getMonth() + 1; // 1-12 (theo lịch dương, bán cầu Bắc / VN)
+  if (m >= 3 && m <= 5) return "spring";
+  if (m >= 6 && m <= 8) return "summer";
+  if (m >= 9 && m <= 11) return "autumn";
+  return "winter";
+}
+
 export function SeasonProvider({ children }: { children: ReactNode }) {
   const [season, setSeasonState] = useState<Season>("spring");
 
@@ -21,6 +29,8 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
     const saved = (typeof window !== "undefined" && localStorage.getItem(KEY)) as Season | null;
     if (saved && ["spring", "summer", "autumn", "winter"].includes(saved)) {
       setSeasonState(saved);
+    } else {
+      setSeasonState(seasonByMonth());
     }
   }, []);
 
